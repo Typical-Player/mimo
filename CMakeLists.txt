@@ -34,6 +34,15 @@ qt_add_qml_module(mimoapp
         assets/Logo.png
 )
 
+if (ANDROID)
+    set_target_properties(mimoapp PROPERTIES
+            QT_ANDROID_PACKAGE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/android
+            QT_ANDROID_PACKAGE_NAME com.typical.mimoapp
+            QT_ANDROID_VERSION_CODE 1
+            QT_ANDROID_VERSION_NAME ${PROJECT_VERSION}
+    )
+endif ()
+
 set_target_properties(mimoapp PROPERTIES
         MACOSX_BUNDLE_GUI_IDENTIFIER com.typical.mimoapp
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}

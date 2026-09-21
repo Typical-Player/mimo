@@ -114,6 +114,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "platforms;android-35" "build-tools;35.0.0"
+      - name: Generate launcher icons
+        run: |
+          sudo apt-get install -y imagemagick
+          for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+            d="${pair%%:*}"; s="${pair##*:}"
+            mkdir -p "android/res/mipmap-$d"
+            convert packaging/mimoapp.png -resize "${s}x${s}" "android/res/mipmap-$d/ic_launcher.png"
+          done
       - name: Configure
         run: |
           cmake -S . -B build -G Ninja \
@@ -128,3 +136,24 @@ jobs:
         with:
           name: mimoapp-android
           path: build/**/*.apk
+      - name: Sign APK
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          echo "$KEYSTORE_B64" | base64 -d > release.jks
+          UNSIGNED=$(find build -name '*release-unsigned.apk' | head -n1)
+          echo "Signing $UNSIGNED"
+          "$BT/zipalign" -p -f 4 "$UNSIGNED" aligned.apk
+          "$BT/apksigner" sign --ks release.jks --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:KS_PASS --key-pass env:KEY_PASS \
+            --out mimoapp-release.apk aligned.apk
+          "$BT/apksigner" verify mimoapp-release.apk
+          rm release.jks
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mimoapp-android
+          path: mimoapp-release.apk
