@@ -46,7 +46,7 @@ jobs:
       - name: Stage files
         run: |
           mkdir -p deploy
-          cp build/mimoapp.html deploy/
+          cp build/mimoapp.html deploy/index.html
           cp build/qtloader.js deploy/
           cp build/mimoapp.js deploy/
           cp build/mimoapp.wasm deploy/
