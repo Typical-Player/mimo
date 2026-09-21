@@ -72,6 +72,7 @@ private:
 
 	QThread m_workerThread;
 	SceneWorker* m_worker;
+	bool m_workerBusy = false;
 
 	QVector<float> m_lastVector;
 	QVector<double> m_distanceHistory;

@@ -44,6 +44,7 @@ void VideoController::setSource(const QUrl& url) {
 	m_distanceHistory.clear();
 	m_lastVector.clear();
 	m_lastFrameTimestamp = -1;
+	m_workerBusy = false;
 	emit requestBufferReset();
 	m_player->setSource(url);
 	m_player->play();
@@ -98,6 +99,9 @@ void VideoController::togglePlayback() const {
 void VideoController::handleVideoFrame(const QVideoFrame& frame) {
 	if (!frame.isValid())
 		return;
+	if (m_workerBusy)
+		return;
+
 	QVideoFrame f = frame;
 	QImage image = f.toImage();
 
@@ -107,7 +111,8 @@ void VideoController::handleVideoFrame(const QVideoFrame& frame) {
 			return;
 		}
 		const QVideoFrameFormat::PixelFormat pf = f.pixelFormat();
-		if (const QImage::Format imgFormat = QVideoFrameFormat::imageFormatFromPixelFormat(pf); imgFormat != QImage::Format_Invalid) {
+		if (const QImage::Format imgFormat = QVideoFrameFormat::imageFormatFromPixelFormat(pf); imgFormat !=
+			QImage::Format_Invalid) {
 			image = QImage(f.bits(0), f.width(), f.height(), f.bytesPerLine(0), imgFormat).copy();
 		}
 		f.unmap();
@@ -122,19 +127,21 @@ void VideoController::handleVideoFrame(const QVideoFrame& frame) {
 	double fps = m_player->metaData().value(QMediaMetaData::VideoFrameRate).toDouble();
 	if (fps <= 0) fps = 30.0;
 
+	static constexpr qint64 kDiscontinuityThresholdMs = 2000;
 	if (m_lastFrameTimestamp >= 0 && !m_expectDiscontinuity) {
-		const qint64 gap = timestampMs - m_lastFrameTimestamp;
-		if (const double frameIntervalMs = 1000.0 / fps; gap < 0 || gap > frameIntervalMs * 5)
+		if (const qint64 gap = timestampMs - m_lastFrameTimestamp; gap < 0 || gap > kDiscontinuityThresholdMs)
 			emit requestBufferReset();
 	}
 	m_expectDiscontinuity = false;
 	m_lastFrameTimestamp = timestampMs;
 
+	m_workerBusy = true;
 	emit queueFrame(image, timestampMs, fps);
 }
 
 void VideoController::handleFrameAnalyzed(const qint64 timestampMs, QVector<float> vector, const double distance) {
 	Q_UNUSED(timestampMs);
+	m_workerBusy = false;
 	m_lastVector = std::move(vector);
 	m_distanceHistory.push_back(distance);
 	while (m_distanceHistory.size() > kMaxHistory)
