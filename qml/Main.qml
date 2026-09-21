@@ -9,6 +9,7 @@ ApplicationWindow {
 	id: window
 	width: 1200
 	height: 720
+	minimumWidth: 550
 	visible: true
 	title: "mimo"
 
@@ -214,7 +215,7 @@ ApplicationWindow {
 		}
 
 		SceneChangePanel {
-			Layout.preferredWidth: 280
+			Layout.preferredWidth: 250
 			Layout.fillHeight: true
 			visible: window.sidebarVisible
 			controller: controller

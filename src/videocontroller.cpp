@@ -1,6 +1,7 @@
 #include "videocontroller.h"
 
 #include <QMediaMetaData>
+#include <QVideoFrameFormat>
 #include <algorithm>
 #include <utility>
 
@@ -97,17 +98,32 @@ void VideoController::togglePlayback() const {
 void VideoController::handleVideoFrame(const QVideoFrame& frame) {
 	if (!frame.isValid())
 		return;
-	const QVideoFrame& f = frame;
-	const QImage image = f.toImage();
-	if (image.isNull())
-		return;
+	QVideoFrame f = frame;
+	QImage image = f.toImage();
+
+	if (image.isNull()) {
+		if (!f.map(QVideoFrame::ReadOnly)) {
+			qWarning("VideoController: frame has no CPU-accessible pixel data (hardware-decoded texture?) - skipping");
+			return;
+		}
+		const QVideoFrameFormat::PixelFormat pf = f.pixelFormat();
+		if (const QImage::Format imgFormat = QVideoFrameFormat::imageFormatFromPixelFormat(pf); imgFormat != QImage::Format_Invalid) {
+			image = QImage(f.bits(0), f.width(), f.height(), f.bytesPerLine(0), imgFormat).copy();
+		}
+		f.unmap();
+		if (image.isNull()) {
+			qWarning("VideoController: could not convert frame (pixel format %d) to QImage - skipping",
+			         static_cast<int>(pf));
+			return;
+		}
+	}
 
 	const qint64 timestampMs = m_player->position();
 	double fps = m_player->metaData().value(QMediaMetaData::VideoFrameRate).toDouble();
 	if (fps <= 0) fps = 30.0;
 
 	if (m_lastFrameTimestamp >= 0 && !m_expectDiscontinuity) {
-		const auto gap = static_cast<double>(timestampMs - m_lastFrameTimestamp);
+		const qint64 gap = timestampMs - m_lastFrameTimestamp;
 		if (const double frameIntervalMs = 1000.0 / fps; gap < 0 || gap > frameIntervalMs * 5)
 			emit requestBufferReset();
 	}
