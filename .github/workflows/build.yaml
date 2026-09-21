@@ -105,9 +105,9 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
-          host: linux
-          target: desktop
-          arch: linux_gcc_64
+          host: all_os
+          target: android
+          arch: android_arm64_v8a
           modules: 'qtshadertools qtmultimedia'
           cache: true
       - name: Remember host Qt path
