@@ -1,11 +1,308 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Document</title>
-</head>
-<body>
-	<h1>Test</h1>
-</body>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>mimo</title>
+        <meta
+            name="description"
+            content="A video player that finds scene changes using cosine distance between frame color histograms."
+        />
+        <link rel="icon" type="image/png" href="favicon.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                color-scheme: light;
+                --bg: #fff;
+                --ink: #13181f;
+                --muted: #57616e;
+                --line: #d5dae1;
+                --accent: #0095FF;
+                --accent-ink: #fff;
+                --spike: #FFB700;
+                --font:
+                    "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI",
+                    Roboto, sans-serif;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html {
+                scroll-padding-top: 1rem;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+                font-size: 1.0625rem;
+                line-height: 1.55;
+            }
+            main {
+                max-width: 44rem;
+                margin: 0 auto;
+                padding: 3rem 1.5rem 4rem;
+            }
+            .logo {
+                display: block;
+                height: 2.25rem;
+                width: auto;
+                margin: 0 auto 2rem;
+            }
+            h1 {
+                font-size: clamp(2.1rem, 6vw, 3.4rem);
+                line-height: 1.05;
+                letter-spacing: -0.02em;
+                font-weight: 800;
+                margin: 0 0 1.25rem;
+                max-width: 16ch;
+            }
+            .lede {
+                color: var(--muted);
+                margin: 1.5rem auto 2.25rem;
+                max-width: 52ch;
+            }
+            .cta {
+                display: inline-block;
+                background: var(--accent);
+                color: var(--accent-ink);
+                font: inherit;
+                font-weight: 700;
+                font-size: 1.2rem;
+                padding: 1rem 1.75rem;
+                border-radius: 0.6rem;
+                text-decoration: none;
+            }
+
+            .cta:focus-visible,
+            a:focus-visible {
+                outline: 3px solid var(--ink);
+                outline-offset: 3px;
+            }
+            .cta[aria-disabled="true"] {
+                background: #8d96a3;
+                pointer-events: none;
+            }
+
+            .meta {
+                color: var(--muted);
+                font-size: 0.95rem;
+                margin: 0.9rem 0 0;
+                min-height: 1.5em;
+            }
+            .note {
+                max-width: 52ch;
+                margin: 0.5rem auto 0;
+                color: var(--muted);
+                font-size: 0.95rem;
+            }
+
+            .others {
+                margin: 2.25rem 0 0;
+                padding-top: 1.25rem;
+                border-top: 1px solid var(--line);
+                font-size: 0.98rem;
+            }
+            .others span {
+                color: var(--muted);
+                margin-right: 0.5rem;
+            }
+            .others a {
+                color: var(--ink);
+                font-weight: 500;
+                margin-right: 1.1rem;
+                text-underline-offset: 3px;
+            }
+            .others a[data-current="true"] {
+                display: none;
+            }
+
+            h2 {
+                font-size: 1.35rem;
+                letter-spacing: -0.01em;
+                margin: 0 0 0.75rem;
+            }
+
+            figure {
+                margin: 1.75rem 0 0;
+            }
+
+            figure svg {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+
+            figcaption {
+                color: var(--muted);
+                font-size: 0.9rem;
+                margin-top: 0.6rem;
+                max-width: 58ch;
+            }
+
+            footer {
+                margin-top: 4rem;
+                color: var(--muted);
+            }
+            #source {
+                color: inherit;
+                text-underline-offset: 3px;
+            }
+            .main-wrap{
+                text-align: center;
+            }
+            .example {
+                display: block;
+                margin: 0 auto;
+                max-width: 100%;
+                max-height: 350px;
+                width: auto;
+                height: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <div class="main-wrap">
+                <img class="logo" src="Logo.png" alt="logo" />
+                <img class="example" src="screenshot.png" alt="example" height="350px" />
+
+                <p class="lede">
+                    Finds scene changes or other abrupt frame changes in a video.
+                </p>
+                <a id="download" class="cta" href="#" aria-disabled="true"
+                    >Checking your system…</a
+                >
+                <br>
+                <a id="source" href="https://github.com/Typical-Player/mimo">Source under GNU GPLv3 license</a>
+
+                <p id="meta" class="meta"></p>
+                <p id="note" class="note"></p>
+
+                <p class="others" id="others">
+                    <span>All downloads:</span>
+                    <a data-os="windows" href="#">Windows</a>
+                    <a data-os="linux" href="#">Linux</a>
+                    <a data-os="android" href="#">Android</a>
+                </p>
+            </div>
+
+            <footer>
+                <figure>
+                    <svg
+                        id="chart"
+                        viewBox="0 0 640 170"
+                        role="img"
+                    ></svg>
+                </figure>
+            </footer>
+        </main>
+
+        <script>
+            const REPO = "Typical-Player/mimo";
+            const ASSETS = {
+                windows: "mimoapp-windows.zip",
+                linux: "mimoapp-linux-x86_64.AppImage",
+                android: "mimoapp-android.apk",
+            };
+
+            const LABEL = {
+                windows: "Windows",
+                linux: "Linux",
+                android: "Android",
+            };
+            const NOTES = {
+                windows:
+                    "Unzip the folder and run mimoapp.exe.",
+                linux: "Make the file executable (chmod +x on the downloaded file) and run it. You may need FUSE installed to launch AppImages.",
+                android:
+                    "Open the file on your phone. Android will ask you to allow installing from unknown sources the first time.",
+            };
+            const latestBase = `https://github.com/${REPO}/releases/download/continuous/`;
+            const urlFor = (os) => latestBase + ASSETS[os];
+
+            function detectOS() {
+                const ua = navigator.userAgent || "";
+                if (/android/i.test(ua)) return "android";
+                if (/iphone|ipad|ipod/i.test(ua)) return "unsupported";
+                if (/windows/i.test(ua)) return "windows";
+                if (/macintosh|mac os x/i.test(ua)) return "unsupported";
+                if (/linux|x11|cros/i.test(ua)) return "linux";
+                return "unsupported";
+            }
+
+            const os = detectOS();
+            const btn = document.getElementById("download");
+            const meta = document.getElementById("meta");
+            const note = document.getElementById("note");
+
+            document.querySelectorAll("#others a").forEach((a) => {
+                a.href = urlFor(a.dataset.os);
+                if (a.dataset.os === os) a.dataset.current = "true";
+            });
+
+            if (os === "unsupported") {
+                btn.textContent = "Choose a download below";
+                btn.href = "#others";
+                btn.removeAttribute("aria-disabled");
+                note.textContent =
+                    "There is no build for this device yet. Windows, Linux and Android are available.";
+                document
+                    .getElementById("others")
+                    .querySelectorAll("a")
+                    .forEach((a) => delete a.dataset.current);
+            } else {
+                btn.textContent = `Download for ${LABEL[os]}`;
+                btn.href = urlFor(os);
+                btn.removeAttribute("aria-disabled");
+                note.textContent = NOTES[os];
+
+                fetch(`https://api.github.com/repos/${REPO}/releases/tags/continuous`)
+                    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+                    .then((rel) => {
+                        const asset = (rel.assets || []).find(
+                            (a) => a.name === ASSETS[os],
+                        );
+                        if (!asset) return;
+                        btn.href = asset.browser_download_url;
+                        const mb = (asset.size / 1048576).toFixed(0);
+                        const date = new Date(asset.updated_at).toLocaleDateString(undefined, {
+                            year: "numeric", month: "short", day: "numeric",
+                        });
+                        meta.textContent = `${mb} MB, updated ${date}`;
+                    })
+                    .catch(() => {
+                    });
+            }
+            (function drawChart() {
+                const svg = document.getElementById("chart");
+                const W = 640,
+                    H = 170,
+                    pad = 8,
+                    n = 64;
+                const bars = Array.from({ length: n }, () => 0.02 + Math.random() * 0.07);
+
+                const cut = 2 + Math.floor(Math.random() * (n - 4));
+                bars[cut] = 0.5 + Math.random() * 0.18;
+
+                const max = 0.7,
+                    bw = (W - pad * 2) / n;
+                const y = (v) => H - pad - (v / max) * (H - pad * 2);
+                let out = "";
+                bars.forEach((v, i) => {
+                    const x = pad + i * bw;
+                    const color = i === cut ? "var(--spike)" : "#9aa5b4";
+                    out += `<rect x="${x.toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${(H - pad - y(v)).toFixed(1)}" fill="${color}"/>`;
+                });
+                const ty = y(0.15).toFixed(1);
+                out += `<line x1="${pad}" x2="${W - pad}" y1="${ty}" y2="${ty}" stroke="#13181f" stroke-width="1.5" stroke-dasharray="6 5"/>`;
+                svg.innerHTML = out;
+            })();
+        </script>
+    </body>
 </html>

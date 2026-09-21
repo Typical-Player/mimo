@@ -161,7 +161,7 @@ jobs:
       - name: Package release assets
         run: |
           mkdir -p release
-          cp artifacts/mimoapp-linux-appimage/*.AppImage release/
+          cp artifacts/mimoapp-linux-appimage/*.AppImage release/mimoapp-linux-x86_64.AppImage
           cp artifacts/mimoapp-android/*.apk release/
           cd artifacts/mimoapp-windows
           zip -r ../../release/mimoapp-windows.zip .
