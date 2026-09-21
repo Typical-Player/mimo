@@ -147,3 +147,36 @@ jobs:
         with:
           name: mimoapp-android
           path: mimoapp-release.apk
+  release:
+    needs: [linux, windows, android]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package release assets
+        run: |
+          mkdir -p release
+          cp artifacts/mimoapp-linux-appimage/*.AppImage release/
+          cp artifacts/mimoapp-android/*.apk release/
+          cd artifacts/mimoapp-windows
+          zip -r ../../release/mimoapp-windows.zip .
+          cd ../..
+
+      - name: Publish continuous release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: continuous
+          name: "continuous Build"
+          body: "Automated build from ${{ github.sha }}."
+          prerelease: true
+          allowUpdates: true
+          replacesArtifacts: true
+          removeArtifacts: true
+          commit: ${{ github.sha }}
+          artifacts: "release/*"
+          token: ${{ secrets.GITHUB_TOKEN }}
