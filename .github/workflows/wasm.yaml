@@ -1,0 +1,92 @@
+name: Build and Deploy WASM Build
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+permissions: { }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.11.1"
+          host: all_os
+          target: wasm
+          arch: wasm_multithread
+          modules: 'qtshadertools qtmultimedia'
+          cache: true
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build brotli
+      - name: Install Emscripten
+        uses: emscripten-core/setup-emsdk@v15
+        with:
+          version: "4.0.7"
+          actions-cache-folder: 'emsdk-cache'
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE="$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake"
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Compress wasm
+        working-directory: build
+        run: |
+          brotli --best *.wasm
+          for f in *.wasm.br; do mv "$f" "${f%.br}"; done
+      - name: Stage files
+        run: |
+          mkdir -p deploy
+          cp build/mimoapp.html deploy/
+          cp build/qtloader.js deploy/
+          cp build/mimoapp.js deploy/
+          cp build/mimoapp.wasm deploy/
+          cat > deploy/_headers << 'EOF'
+          /mimoapp.wasm
+            Content-Type: application/wasm
+            Content-Encoding: br
+
+          /*
+            Cross-Origin-Opener-Policy: same-origin
+            Cross-Origin-Embedder-Policy: require-corp
+          EOF
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-build
+          path: deploy/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: Cloudflare deploy
+    permissions:
+      actions: read
+      contents: read
+      deployments: write
+      pull-requests: write
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-build
+          path: deploy
+      - name: Deploy to Cloudflare Pages
+        uses: andykenward/github-actions-cloudflare-pages@v3.5.0
+        with:
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          cloudflare-project-name: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+          directory: deploy
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-environment: ${{ (github.ref == 'refs/heads/main' && 'Cloudflare deploy') || 'Preview' }}
