@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  QT_VERSION: "6.11.0"
+  QT_VERSION: "6.11.1"
 
 jobs:
   linux:
@@ -75,8 +75,9 @@ jobs:
           target: desktop
           arch: win64_msvc2022_64
           modules: 'qtshadertools qtmultimedia'
-          use-official: true
-          cache: false
+          cache: true
+          # https://github.com/jurplel/install-qt-action/issues/374
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@076e1659807d0b362a3ed684d54c2e9c775eb9c7
       - uses: ilammy/msvc-dev-cmd@v1
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
