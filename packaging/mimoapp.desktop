@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Typical Player
+Comment=Video player with scene change detection
+Exec=mimoapp
+Icon=mimoapp
+Categories=AudioVideo;Video;Player;
+Terminal=false

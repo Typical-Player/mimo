@@ -59,6 +59,7 @@ if (EMSCRIPTEN)
     set_target_properties(mimoapp PROPERTIES
             QT_WASM_INITIAL_MEMORY 512MB
     )
+    target_link_libraries(mimoapp PRIVATE embind)
 endif ()
 
 include(GNUInstallDirs)

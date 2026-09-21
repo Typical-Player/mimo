@@ -1,92 +1,144 @@
-name: Build and Deploy WASM Build
+name: Build
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-permissions: { }
+permissions:
+  contents: read
+
+env:
+  QT_VERSION: "6.11.1"
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
+  linux:
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.11.1"
-          host: all_os
-          target: wasm
-          arch: wasm_multithread
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
           modules: 'qtshadertools qtmultimedia'
           cache: true
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build brotli
-      - name: Install Emscripten
-        uses: emscripten-core/setup-emsdk@v15
+          sudo apt-get install -y ninja-build libgl1-mesa-dev libxkbcommon-dev \
+            libxkbcommon-x11-0 libxcb-cursor0 libpulse-dev libvulkan-dev \
+            libfuse2 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-render-util0 libxcb-xinerama0 libxcb-shape0
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Install into AppDir
+        run: DESTDIR="$PWD/AppDir" cmake --install build --prefix /usr
+      - name: Download linuxdeploy
+        run: |
+          base=https://github.com/linuxdeploy
+          curl -fsSL -o linuxdeploy https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -fsSL -o linuxdeploy-plugin-qt https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy linuxdeploy-plugin-qt
+      - name: Build AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
+          QMAKE: ${{ env.QT_ROOT_DIR }}/bin/qmake
+          QML_SOURCES_PATHS: ${{ github.workspace }}/qml
+          EXTRA_QT_PLUGINS: multimedia
+          LINUXDEPLOY_OUTPUT_VERSION: ${{ github.sha }}
+          LD_LIBRARY_PATH: ${{ env.QT_ROOT_DIR }}/lib
+        run: |
+          ./linuxdeploy --appdir AppDir \
+            --plugin qt \
+            --desktop-file packaging/mimoapp.desktop \
+            --icon-file packaging/mimoapp.png \
+            --output appimage
+      - uses: actions/upload-artifact@v4
         with:
-          version: "4.0.7"
-          actions-cache-folder: 'emsdk-cache'
+          name: mimoapp-linux-appimage
+          path: '*.AppImage'
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          modules: 'qtshadertools qtmultimedia'
+          cache: true
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Bundle Qt DLLs
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory dist | Out-Null
+          Copy-Item build\mimoapp.exe dist\
+          windeployqt --release --qmldir qml dist\mimoapp.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mimoapp-windows
+          path: dist/
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install host Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
+          modules: 'qtshadertools qtmultimedia'
+          cache: true
+      - name: Remember host Qt path
+        run: echo "QT_HOST_PATH=$QT_ROOT_DIR" >> "$GITHUB_ENV"
+      - name: Install Android Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: android
+          arch: android_arm64_v8a
+          modules: 'qtshadertools qtmultimedia'
+          cache: true
+      - name: Install dependencies and NDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+          # Use the NDK version the Qt docs list for your Qt release
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "platforms;android-35" "build-tools;35.0.0"
       - name: Configure
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TOOLCHAIN_FILE="$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake"
-      - name: Build
-        run: cmake --build build --parallel
-      - name: Compress wasm
-        working-directory: build
-        run: |
-          brotli --best *.wasm
-          for f in *.wasm.br; do mv "$f" "${f%.br}"; done
-      - name: Stage files
-        run: |
-          mkdir -p deploy
-          cp build/mimoapp.html deploy/index.html
-          cp build/qtloader.js deploy/
-          cp build/mimoapp.js deploy/
-          cp build/mimoapp.wasm deploy/
-          cat > deploy/_headers << 'EOF'
-          /mimoapp.wasm
-            Content-Type: application/wasm
-            Content-Encoding: br
-
-          /*
-            Cross-Origin-Opener-Policy: same-origin
-            Cross-Origin-Embedder-Policy: require-corp
-          EOF
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+            -DCMAKE_TOOLCHAIN_FILE="$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake" \
+            -DQT_HOST_PATH="$QT_HOST_PATH" \
+            -DANDROID_SDK_ROOT="$ANDROID_HOME" \
+            -DANDROID_NDK_ROOT="$ANDROID_HOME/ndk/27.2.12479018" \
+            -DANDROID_ABI=arm64-v8a
+      - name: Build APK
+        run: cmake --build build --target apk --parallel
+      - uses: actions/upload-artifact@v4
         with:
-          name: wasm-build
-          path: deploy/
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    environment: Cloudflare deploy
-    permissions:
-      actions: read
-      contents: read
-      deployments: write
-      pull-requests: write
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: wasm-build
-          path: deploy
-      - name: Deploy to Cloudflare Pages
-        uses: andykenward/github-actions-cloudflare-pages@v3.5.0
-        with:
-          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          cloudflare-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          cloudflare-project-name: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
-          directory: deploy
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          github-environment: ${{ (github.ref == 'refs/heads/main' && 'Cloudflare deploy') || 'Preview' }}
+          name: mimoapp-android
+          path: build/**/*.apk
