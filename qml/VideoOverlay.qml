@@ -34,6 +34,8 @@ Item {
 					mode: "bars"
 					values: root.controller.lastVector
 					lineColor: "#4fc3f7"
+					layer.enabled: true
+					layer.samples: 4
 				}
 			}
 		}
@@ -60,6 +62,8 @@ Item {
 					values: root.controller.distanceHistory
 					lineColor: "#ffb74d"
 					fixedMax: 1.0
+					layer.enabled: true
+					layer.samples: 4
 				}
 			}
 		}

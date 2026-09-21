@@ -38,12 +38,14 @@ Rectangle {
 			clip: true
 
 			delegate: Rectangle {
+				readonly property int padding: 6
 				width: ListView.view.width
-				height: 44
+				implicitHeight: contentLayout.implicitHeight + padding * 2
 				color: "#2a2a2a"
 				radius: 4
 
 				RowLayout {
+					id: contentLayout
 					anchors.fill: parent
 					anchors.margins: 6
 
