@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <utility>
 
-VideoController::VideoController(QObject* parent) : QObject(parent) {
+VideoController::VideoController(QObject *parent) : QObject(parent) {
 	m_player = new QMediaPlayer(this);
 	m_sceneChanges = new SceneChangeModel(this);
 
@@ -19,7 +19,7 @@ VideoController::VideoController(QObject* parent) : QObject(parent) {
 	m_workerThread.start();
 }
 
-void VideoController::setVideoSink(QVideoSink* sink) {
+void VideoController::setVideoSink(QVideoSink *sink) {
 	if (m_sink == sink)
 		return;
 	if (m_sink)
@@ -36,7 +36,7 @@ VideoController::~VideoController() {
 	m_workerThread.wait();
 }
 
-void VideoController::setSource(const QUrl& url) {
+void VideoController::setSource(const QUrl &url) {
 	if (m_source == url)
 		return;
 	m_source = url;
@@ -52,28 +52,39 @@ void VideoController::setSource(const QUrl& url) {
 }
 
 void VideoController::setShowVectorOverlay(const bool value) {
-	if (m_showVectorOverlay == value) return;
+	if (m_showVectorOverlay == value)
+		return;
 	m_showVectorOverlay = value;
 	emit showVectorOverlayChanged();
 }
 
 void VideoController::setShowDistanceOverlay(const bool value) {
-	if (m_showDistanceOverlay == value) return;
+	if (m_showDistanceOverlay == value)
+		return;
 	m_showDistanceOverlay = value;
 	emit showDistanceOverlayChanged();
+}
+
+void VideoController::setShowCubeOverlay(const bool value) {
+	if (m_showCubeOverlay == value)
+		return;
+	m_showCubeOverlay = value;
+	emit showCubeOverlayChanged();
 }
 
 QVariantList VideoController::lastVector() const {
 	QVariantList list;
 	list.reserve(m_lastVector.size());
-	for (const float v : m_lastVector) list.append(v);
+	for (const float v : m_lastVector)
+		list.append(v);
 	return list;
 }
 
 QVariantList VideoController::distanceHistory() const {
 	QVariantList list;
 	list.reserve(m_distanceHistory.size());
-	for (const double d : m_distanceHistory) list.append(d);
+	for (const double d : m_distanceHistory)
+		list.append(d);
 	return list;
 }
 
@@ -85,7 +96,8 @@ void VideoController::seekTo(const qint64 milliseconds) {
 
 void VideoController::jumpToSceneChange(const int index) {
 	const qint64 ts = m_sceneChanges->timestampAt(index);
-	if (ts < 0) return;
+	if (ts < 0)
+		return;
 	seekTo(std::max<qint64>(0, ts - 1000));
 }
 
@@ -96,7 +108,7 @@ void VideoController::togglePlayback() const {
 		m_player->play();
 }
 
-void VideoController::handleVideoFrame(const QVideoFrame& frame) {
+void VideoController::handleVideoFrame(const QVideoFrame &frame) {
 	if (!frame.isValid())
 		return;
 	if (m_workerBusy)
@@ -107,25 +119,28 @@ void VideoController::handleVideoFrame(const QVideoFrame& frame) {
 
 	if (image.isNull()) {
 		if (!f.map(QVideoFrame::ReadOnly)) {
-			qWarning("VideoController: frame has no CPU-accessible pixel data (hardware-decoded texture?) - skipping");
+			qWarning("VideoController: frame has no CPU-accessible pixel data "
+					 "(hardware-decoded texture?) - skipping");
 			return;
 		}
 		const QVideoFrameFormat::PixelFormat pf = f.pixelFormat();
-		if (const QImage::Format imgFormat = QVideoFrameFormat::imageFormatFromPixelFormat(pf); imgFormat !=
-			QImage::Format_Invalid) {
+		if (const QImage::Format imgFormat = QVideoFrameFormat::imageFormatFromPixelFormat(pf);
+			imgFormat != QImage::Format_Invalid) {
 			image = QImage(f.bits(0), f.width(), f.height(), f.bytesPerLine(0), imgFormat).copy();
 		}
 		f.unmap();
 		if (image.isNull()) {
-			qWarning("VideoController: could not convert frame (pixel format %d) to QImage - skipping",
-			         static_cast<int>(pf));
+			qWarning("VideoController: could not convert frame (pixel format %d) to "
+					 "QImage - skipping",
+					 static_cast<int>(pf));
 			return;
 		}
 	}
 
 	const qint64 timestampMs = m_player->position();
 	double fps = m_player->metaData().value(QMediaMetaData::VideoFrameRate).toDouble();
-	if (fps <= 0) fps = 30.0;
+	if (fps <= 0)
+		fps = 30.0;
 
 	static constexpr qint64 kDiscontinuityThresholdMs = 2000;
 	if (m_lastFrameTimestamp >= 0 && !m_expectDiscontinuity) {

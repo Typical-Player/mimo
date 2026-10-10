@@ -1,0 +1,37 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Always
+
+ColumnLimit: 120
+
+BreakBeforeBraces: Attach
+
+IndentCaseLabels: false
+IndentPPDirectives: None
+AccessModifierOffset: -4
+
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+SpacesInAngles: Never
+SpacesInContainerLiterals: false
+
+AlignTrailingComments: true
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+
+PointerAlignment: Right
+
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortLambdasOnASingleLine: All
+
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 8

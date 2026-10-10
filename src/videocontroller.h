@@ -1,5 +1,8 @@
 #pragma once
 
+#include "scenechangemodel.h"
+#include "sceneworker.h"
+
 #include <QMediaPlayer>
 #include <QObject>
 #include <QThread>
@@ -8,9 +11,6 @@
 #include <QVideoFrame>
 #include <QVideoSink>
 #include <qqml.h>
-
-#include "scenechangemodel.h"
-#include "sceneworker.h"
 
 class VideoController : public QObject {
 	Q_OBJECT
@@ -22,21 +22,21 @@ class VideoController : public QObject {
 	Q_PROPERTY(QVariantList lastVector READ lastVector NOTIFY frameAnalyzed)
 	Q_PROPERTY(QVariantList distanceHistory READ distanceHistory NOTIFY frameAnalyzed)
 	Q_PROPERTY(bool showVectorOverlay READ showVectorOverlay WRITE setShowVectorOverlay NOTIFY showVectorOverlayChanged)
-	Q_PROPERTY(
-		bool showDistanceOverlay READ showDistanceOverlay WRITE setShowDistanceOverlay NOTIFY
-		showDistanceOverlayChanged)
+	Q_PROPERTY(bool showDistanceOverlay READ showDistanceOverlay WRITE setShowDistanceOverlay NOTIFY
+					   showDistanceOverlayChanged)
+	Q_PROPERTY(bool showCubeOverlay READ showCubeOverlay WRITE setShowCubeOverlay NOTIFY showCubeOverlayChanged)
 
 public:
-	explicit VideoController(QObject* parent = nullptr);
+	explicit VideoController(QObject *parent = nullptr);
 	~VideoController() override;
 
 	[[nodiscard]] QUrl source() const { return m_source; }
-	void setSource(const QUrl& url);
+	void setSource(const QUrl &url);
 
-	[[nodiscard]] QMediaPlayer* player() const { return m_player; }
-	[[nodiscard]] SceneChangeModel* sceneChanges() const { return m_sceneChanges; }
+	[[nodiscard]] QMediaPlayer *player() const { return m_player; }
+	[[nodiscard]] SceneChangeModel *sceneChanges() const { return m_sceneChanges; }
 
-	Q_INVOKABLE void setVideoSink(QVideoSink* sink);
+	Q_INVOKABLE void setVideoSink(QVideoSink *sink);
 
 	[[nodiscard]] QVariantList lastVector() const;
 	[[nodiscard]] QVariantList distanceHistory() const;
@@ -45,6 +45,8 @@ public:
 	void setShowVectorOverlay(bool value);
 	[[nodiscard]] bool showDistanceOverlay() const { return m_showDistanceOverlay; }
 	void setShowDistanceOverlay(bool value);
+	[[nodiscard]] bool showCubeOverlay() const { return m_showCubeOverlay; }
+	void setShowCubeOverlay(bool value);
 
 	Q_INVOKABLE void seekTo(qint64 milliseconds);
 	Q_INVOKABLE void jumpToSceneChange(int index);
@@ -56,22 +58,23 @@ signals:
 	void frameAnalyzed();
 	void showVectorOverlayChanged();
 	void showDistanceOverlayChanged();
+	void showCubeOverlayChanged();
 	void queueFrame(QImage frame, qint64 timestampMs, double fps);
 	void requestBufferReset();
 
 private slots:
-	void handleVideoFrame(const QVideoFrame& frame);
+	void handleVideoFrame(const QVideoFrame &frame);
 	void handleFrameAnalyzed(qint64 timestampMs, QVector<float> vector, double distance);
 	void handleSceneChange(qint64 timestampMs) const;
 
 private:
 	QUrl m_source;
-	QMediaPlayer* m_player;
-	QVideoSink* m_sink = nullptr;
-	SceneChangeModel* m_sceneChanges;
+	QMediaPlayer *m_player;
+	QVideoSink *m_sink = nullptr;
+	SceneChangeModel *m_sceneChanges;
 
 	QThread m_workerThread;
-	SceneWorker* m_worker;
+	SceneWorker *m_worker;
 	bool m_workerBusy = false;
 
 	QVector<float> m_lastVector;
@@ -83,4 +86,5 @@ private:
 
 	bool m_showVectorOverlay = false;
 	bool m_showDistanceOverlay = false;
+	bool m_showCubeOverlay = false;
 };

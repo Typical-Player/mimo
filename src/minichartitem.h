@@ -16,16 +16,16 @@ class MiniChartItem : public QQuickItem {
 	Q_PROPERTY(qreal fixedMax READ fixedMax WRITE setFixedMax NOTIFY fixedMaxChanged)
 
 public:
-	explicit MiniChartItem(QQuickItem* parent = nullptr);
+	explicit MiniChartItem(QQuickItem *parent = nullptr);
 
 	[[nodiscard]] QVariantList values() const;
-	void setValues(const QVariantList& values);
+	void setValues(const QVariantList &values);
 
 	[[nodiscard]] QString mode() const { return m_mode; }
-	void setMode(const QString& mode);
+	void setMode(const QString &mode);
 
 	[[nodiscard]] QColor lineColor() const { return m_lineColor; }
-	void setLineColor(const QColor& color);
+	void setLineColor(const QColor &color);
 
 	[[nodiscard]] qreal fixedMax() const { return m_fixedMax; }
 	void setFixedMax(qreal value);
@@ -37,8 +37,8 @@ signals:
 	void fixedMaxChanged();
 
 protected:
-	QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*) override;
-	void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
+	QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) override;
+	void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 
 private:
 	QVector<float> m_values;

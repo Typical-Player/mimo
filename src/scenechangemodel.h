@@ -12,10 +12,10 @@ class SceneChangeModel : public QAbstractListModel {
 public:
 	enum Roles { TimestampRole = Qt::UserRole + 1, LabelRole };
 
-	explicit SceneChangeModel(QObject* parent = nullptr);
+	explicit SceneChangeModel(QObject *parent = nullptr);
 
-	[[nodiscard]] int rowCount(const QModelIndex& parent) const override;
-	[[nodiscard]] QVariant data(const QModelIndex& index, int role) const override;
+	[[nodiscard]] int rowCount(const QModelIndex &parent) const override;
+	[[nodiscard]] QVariant data(const QModelIndex &index, int role) const override;
 	[[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
 	[[nodiscard]] bool tryAddSceneChange(qint64 timestampMs, qint64 minGapMs = 500);

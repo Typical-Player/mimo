@@ -21,6 +21,8 @@ qt_add_executable(mimoapp
         src/scenechangemodel.cpp
         src/minichartitem.cpp
         src/minichartitem.h
+        src/historycubeitem.h
+        src/historycubeitem.cpp
 )
 
 qt_add_qml_module(mimoapp

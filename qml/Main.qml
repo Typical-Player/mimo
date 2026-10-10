@@ -69,6 +69,12 @@ ApplicationWindow {
 						onTriggered: controller.showDistanceOverlay = checked
 					}
 					MenuItem {
+						text: "Show histogram cube"
+						checkable: true
+						checked: controller.showCubeOverlay
+						onTriggered: controller.showCubeOverlay = checked
+					}
+					MenuItem {
 						text: "Show scene list"
 						checkable: true
 						checked: window.sidebarVisible
@@ -157,6 +163,7 @@ ApplicationWindow {
 			VideoOverlay {
 				anchors.top: parent.top
 				anchors.left: parent.left
+				anchors.right: parent.right
 				anchors.margins: 12
 				controller: controller
 			}

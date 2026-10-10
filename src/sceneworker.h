@@ -9,10 +9,10 @@ class SceneWorker : public QObject {
 	Q_OBJECT
 
 public:
-	explicit SceneWorker(QObject* parent = nullptr);
+	explicit SceneWorker(QObject *parent = nullptr);
 
 public slots:
-	void processFrame(const QImage& frame, qint64 timestampMs, double fps);
+	void processFrame(const QImage &frame, qint64 timestampMs, double fps);
 	void resetBuffer();
 
 signals:
